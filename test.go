@@ -11,6 +11,7 @@ import (
 	"database/sql"
 	"encoding/base64"
 	"encoding/pem"
+	"errors"
 	"fmt"
 	"io"
 	"os"
@@ -163,6 +164,9 @@ func getData(filename string) (encodedData string, key string, err error) {
 	err = db.QueryRow("SELECT data, key FROM encoded_data WHERE filename=$1", filename).
 		Scan(&encodedData, &key)
 	if err != nil {
+		if err == sql.ErrNoRows {
+			return "", "", errors.New("no such file found")
+		}
 		return
 	}
 
@@ -231,6 +235,7 @@ func PKCS7Unpad(data []byte) []byte {
 	padding := int(data[length-1])
 	return data[:length-padding]
 }
+
 func encryptAES(plaintext []byte, key []byte) (string, error) {
 	block, err := aes.NewCipher(key)
 	if err != nil {
@@ -268,7 +273,7 @@ func main() {
 		fmt.Println("3. Exit")
 
 		var choice int
-		fmt.Print("Enter your choice: ")
+		fmt.Print("\nEnter your choice: ")
 		_, err := fmt.Scan(&choice)
 		if err != nil {
 			fmt.Println("Error reading choice:", err)
@@ -288,7 +293,7 @@ func main() {
 			if err != nil {
 				fmt.Println(err)
 			} else {
-				fmt.Println("encryption completed successfully.")
+				fmt.Println("encryption completed successfully.\n")
 			}
 		case 2:
 			var filename string
